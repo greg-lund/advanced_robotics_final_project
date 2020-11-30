@@ -80,8 +80,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation -0.5169396363101205 -0.8503284665232386 -0.0985642502725898 0.441162017952635
-  position -4.911143973719691 3.5205763149480536 10.104337315109362
+  orientation -0.8893133799249865 0.4545143845869692 0.05038240258190627 0.24801175947262605
+  position 7.2503110637794235 29.64666754653971 123.41947070619341
 }
 TexturedBackground {
 }
@@ -589,7 +589,7 @@ GenericTrafficLight {
   name "generic traffic light(1)"
   startGreen FALSE
   greenTime 30
-  state "orange"
+  state "red"
 }
 StopSign {
   translation -46.6615 0 101.728
@@ -732,7 +732,7 @@ Atm {
 AdvertisingBoard {
   translation -147.42 8.53 -106.1
   frontTexture [
-    "/home/aaquib/course/Robotics-2020/Advanced_Robotics/CSCI5302-AVChallenge/textures/evel-knievel.jpg"
+    "/home/greg/classes/advanced_robotics/final_project/textures/evel-knievel.jpg"
   ]
   displayWidth 10
   displayHeight 8
@@ -831,7 +831,6 @@ TeslaModel3 {
   plate [
     "../textures/license.png"
   ]
-  engineSound "sounds/rotational_motor.wav"
   controller "av_challenge_controller"
   controllerArgs [
     ""
@@ -888,7 +887,8 @@ TeslaModel3 {
       ]
       name "front_camera"
       fieldOfView 1
-      width 128
+      width 256
+      height 128
     }
   ]
   sensorsSlotCenter [
