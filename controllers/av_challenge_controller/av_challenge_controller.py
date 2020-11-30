@@ -27,7 +27,7 @@ def laneLineCmdVel(camera,white_sensitivity=60):
     # Get edges via canny edge detection
     edges = cv2.Canny(mask,200,400)
     (h,w) = edges.shape
-    edges[0:int(2*h/3)][:] = 0
+    edges[0:int(2*h/3),:] = 0
 
     # Convert edges into lines via Hough Transform
     lines = cv2.HoughLinesP(edges,1,np.pi/180,1,np.array([]),minLineLength=8,maxLineGap=24)
@@ -53,13 +53,7 @@ def laneLineCmdVel(camera,white_sensitivity=60):
     avg_center /= n
     avg_theta /= n
 
-    cv2.imshow('image',edges)
-    cv2.waitKey(1)
-
-    print("avg_center:",avg_center)
-    print("center:",(avg_center-w/2)/(w/2))
     return (avg_center - w/2)/(w/2)
-    #return np.pi/2 - avg_theta
 
 def getFrame(camera):
     img = np.array(camera.getImageArray(), dtype='uint8')
@@ -80,20 +74,10 @@ rear_camera.enable(100)
 lidar.enable(100)
 lidar.enablePointCloud()
 
-driver.setCruisingSpeed(10)
+driver.setCruisingSpeed(20)
 
-max_delta = 5 * np.pi / 180
 while driver.step() != -1:
-    curr_angle = driver.getSteeringAngle()
-    cmd_angle = laneLineCmdVel(front_camera,60)
-    '''
-    if abs(cmd_angle - curr_angle) > max_delta:
-        if cmd_angle > curr_angle:
-            cmd_angle = min(np.pi/2,curr_angle + max_delta)
-        else:
-            cmd_angle = max(-np.pi/2,curr_angle - max_delta)
-    '''
-    cmd_angle /= np.pi/2
-    print('curr_angle: %f, cmd_angle: %f'%(curr_angle,cmd_angle))
+    cmd_angle = laneLineCmdVel(front_camera,40)
+    cmd_angle = max(min(cmd_angle,1),-1)
     driver.setSteeringAngle(cmd_angle)
 
