@@ -1,9 +1,10 @@
-"""av_challenge_controller controller."""
+#!/usr/bin/python3
 
+"""av_challenge_controller controller."""
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, Motor, DistanceSensor
 from controller import Robot, Camera, Motor, Lidar
-from vehicle import Driver
+from vehicle import Driver, Car
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -17,13 +18,14 @@ def laneLineCmdVel(camera,white_sensitivity=60):
 
     # Get image from camera in the correct orientation
     img = cv2.flip(cv2.rotate(np.array(camera.getImageArray(), dtype='uint8'),cv2.ROTATE_90_CLOCKWISE),1)
-
+    # plt.imshow(img)
+    # plt.show()
     # Mask image to get just the lane line
     img_hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
     lower_white = np.array([0,0,255-white_sensitivity],dtype=np.uint8)
     upper_white = np.array([255,white_sensitivity,255],dtype=np.uint8)
     mask = cv2.inRange(img_hsv,lower_white,upper_white)
-
+    
     # Get edges via canny edge detection
     edges = cv2.Canny(mask,200,400)
     (h,w) = edges.shape
@@ -31,11 +33,9 @@ def laneLineCmdVel(camera,white_sensitivity=60):
 
     # Convert edges into lines via Hough Transform
     lines = cv2.HoughLinesP(edges,1,np.pi/180,1,np.array([]),minLineLength=8,maxLineGap=24)
-
     # If no lines return no steering command
     if lines is None:
         return 0
-
     # Otherwise lets average, find the slope and displacement from center
     avg_center = 0
     avg_theta = 0
@@ -52,8 +52,7 @@ def laneLineCmdVel(camera,white_sensitivity=60):
 
     avg_center /= n
     avg_theta /= n
-
-    return (avg_center - w/2)/(w/2)
+    return float(avg_center - w/2)/float(w/2)
 
 def getFrame(camera):
     img = np.array(camera.getImageArray(), dtype='uint8')
@@ -61,23 +60,23 @@ def getFrame(camera):
     return img
 
 # create the Robot instance.
-driver = Driver()
-front_camera = driver.getCamera("front_camera")
-rear_camera = driver.getCamera("rear_camera")
-lidar = driver.getLidar("Sick LMS 291")
+car = Car()
+front_camera = car.getCamera("front_camera")
+rear_camera = car.getCamera("rear_camera")
+lidar = car.getLidar("Sick LMS 291")
 
 # get the time step of the current world.
-timestep = int(driver.getBasicTimeStep())
+timestep = int(car.getBasicTimeStep())
 
 front_camera.enable(100)
 rear_camera.enable(100)
 lidar.enable(100)
 lidar.enablePointCloud()
 
-driver.setCruisingSpeed(20)
+car.setCruisingSpeed(20)
 
-while driver.step() != -1:
+while car.step() != -1:
     cmd_angle = laneLineCmdVel(front_camera,40)
     cmd_angle = max(min(cmd_angle,1),-1)
-    driver.setSteeringAngle(cmd_angle)
+    car.setSteeringAngle(cmd_angle)
 
