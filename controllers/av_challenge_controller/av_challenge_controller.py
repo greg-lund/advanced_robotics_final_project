@@ -1,15 +1,36 @@
 #!/usr/bin/python3
 
 """av_challenge_controller controller."""
-# You may need to import some classes of the controller module. Ex:
-#  from controller import Robot, Motor, DistanceSensor
 from controller import Robot, Camera, Motor, Lidar
 from vehicle import Driver, Car
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import rospy
-from std_msgs.msg import Float64
+
+def detectStopSign(camera,init_brake=0.5):
+    '''
+    Given a camera, find stop sign via
+    hsv masking, and depending on the size
+    give a brake command
+    '''
+
+    img = cv2.flip(cv2.rotate(np.array(camera.getImageArray(), dtype='uint8'), cv2.ROTATE_90_CLOCKWISE), 1)
+    cv2.imwrite('stop_sign_light.png',img)
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    lower = np.array([110,17,168], dtype=np.uint8)
+    upper = np.array([180,255,255], dtype=np.uint8)
+    mask = cv2.inRange(img_hsv, lower, upper)
+
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    areas = []
+    for c in contours:
+        areas.append(cv2.contourArea(c))
+
+    if len(areas) != 0:
+        max_area = max(areas)
+        if max_area > 30:
+            return max(-init_brake/110 * (max_area - 130),0)
+    return 1
 
 def laneLineCmdVel(camera, white_sensitivity=60):
     '''
@@ -20,11 +41,9 @@ def laneLineCmdVel(camera, white_sensitivity=60):
 
     # Get image from camera in the correct orientation
     img = cv2.flip(cv2.rotate(np.array(camera.getImageArray(), dtype='uint8'), cv2.ROTATE_90_CLOCKWISE), 1)
-    # plt.imshow(img)
-    # plt.show()
+
     # Mask image to get just the (white) lane line
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
     lower_white = np.array([0, 0, 255-white_sensitivity], dtype=np.uint8)
     upper_white = np.array([255, white_sensitivity, 255], dtype=np.uint8)
     mask = cv2.inRange(img_hsv, lower_white, upper_white)
@@ -58,59 +77,44 @@ def laneLineCmdVel(camera, white_sensitivity=60):
     return float(avg_center - w/2)/float(w/2)
 
 
-def getFrame(camera):
-    img = np.array(camera.getImageArray(), dtype='uint8')
-    img = cv2.flip(cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE), 1)
-    return img
-
-
-# create the Robot instance.
+# Initialize our car and sensors
 car = Car()
 front_camera = car.getCamera("front_camera")
-rear_camera = car.getCamera("rear_camera")
-lidar = car.getLidar("Sick LMS 291")
-
-# get the time step of the current world.
-timestep = int(car.getBasicTimeStep())
-
 front_camera.enable(50)
-rear_camera.enable(100)
-lidar.enable(100)
-lidar.enablePointCloud()
+
 car.setBrakeIntensity(0.75)
 car.setCruisingSpeed(35)
+
+# Do we want to stop at stop signs?
+stop_sign = True
+
+# Controller tuning and inits
 alpha = 0.7
 prev_cmd_angle = 0
 low_pass_cmd = 0
-pub = rospy.Publisher('chatter', Float64, queue_size=10)
-rospy.init_node('talker', anonymous=True)
+
 while car.step() != -1:
     cmd_angle = laneLineCmdVel(front_camera, 40)
     if cmd_angle is None:
-        # cmd_angle = prev_cmd_angle -  (np.sign(prev_cmd_angle)*(0.01))
         cmd_angle = prev_cmd_angle
 
-    # angle needs to be between -1 and 1
-    # cmd_angle = max(min(cmd_angle, 2), -2)
     diff = cmd_angle - low_pass_cmd
     p_total = 0.5 * cmd_angle
-    print(cmd_angle, low_pass_cmd)
 
     diff = cmd_angle - prev_cmd_angle
     desired_speed = 40 / (abs(cmd_angle) + 1)
-    print('desired speed', desired_speed)
-    print('diff', diff)
 
     inc = max(min(diff, 0.02), -0.02)
 
     cmd_angle = prev_cmd_angle + inc
     low_pass_cmd = cmd_angle
-    # low_pass_cmd = (alpha * cmd_angle) + ((1 - alpha) * (low_pass_cmd))
 
     car.setCruisingSpeed(desired_speed)
     car.setSteeringAngle(p_total)
 
-    print('low pass cmd', low_pass_cmd)
-    print('speed', car.getCurrentSpeed())
     prev_cmd_angle = low_pass_cmd
-    pub.publish(Float64(low_pass_cmd))
+    
+    # Stop sign detection
+    if stop_sign:
+        brake_cmd = detectStopSign(front_camera)
+        car.setCruisingSpeed(desired_speed*brake_cmd)
