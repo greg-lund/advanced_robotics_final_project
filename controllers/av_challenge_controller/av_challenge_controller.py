@@ -36,7 +36,8 @@ def laneLineCmdVel(camera, white_sensitivity=60):
     '''
     Take in raw image from front_camera, track
     lane lines and return steering angle such that
-    the car centers itself on the lines
+    the car centers itself on the lines.
+    Some inspiration taken from://towardsdatascience.com/deeppicar-part-4-lane-following-via-opencv-737dd9e47c96
     '''
 
     # Get image from camera in the correct orientation
@@ -55,9 +56,11 @@ def laneLineCmdVel(camera, white_sensitivity=60):
 
     # Convert edges into lines via Hough Transform
     lines = cv2.HoughLinesP(edges, 1, np.pi/180, 1, np.array([]), minLineLength=8, maxLineGap=24)
+
     # If no lines return no steering command
     if lines is None:
         return None
+
     # Otherwise lets average, find the slope and displacement from center
     avg_center = 0
     avg_theta = 0
@@ -102,13 +105,8 @@ while car.step() != -1:
     p_total = 0.5 * cmd_angle
 
     diff = cmd_angle - prev_cmd_angle
-<<<<<<< HEAD
     desired_speed = 40 / (abs(cmd_angle) + 1)
-=======
     desired_speed = 35 / (abs(cmd_angle) + 1)
-    print('desired speed', desired_speed)
-    print('diff', diff)
->>>>>>> 10d222532ee959029a35600f567dc13bc1a410b4
 
     inc = max(min(diff, 0.02), -0.02)
 
