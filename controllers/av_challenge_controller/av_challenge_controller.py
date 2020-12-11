@@ -8,7 +8,8 @@ from vehicle import Driver, Car
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-
+import rospy
+from std_msgs.msg import Float64
 
 def laneLineCmdVel(camera, white_sensitivity=60):
     '''
@@ -37,7 +38,7 @@ def laneLineCmdVel(camera, white_sensitivity=60):
     lines = cv2.HoughLinesP(edges, 1, np.pi/180, 1, np.array([]), minLineLength=8, maxLineGap=24)
     # If no lines return no steering command
     if lines is None:
-        return 0
+        return None
     # Otherwise lets average, find the slope and displacement from center
     avg_center = 0
     avg_theta = 0
@@ -76,29 +77,40 @@ front_camera.enable(50)
 rear_camera.enable(100)
 lidar.enable(100)
 lidar.enablePointCloud()
-car.setBrakeIntensity(0.5)
+car.setBrakeIntensity(0.75)
 car.setCruisingSpeed(35)
-alpha = 0.1
+alpha = 0.7
 prev_cmd_angle = 0
 low_pass_cmd = 0
+pub = rospy.Publisher('chatter', Float64, queue_size=10)
+rospy.init_node('talker', anonymous=True)
 while car.step() != -1:
     cmd_angle = laneLineCmdVel(front_camera, 40)
+    if cmd_angle is None:
+        # cmd_angle = prev_cmd_angle -  (np.sign(prev_cmd_angle)*(0.01))
+        cmd_angle = prev_cmd_angle
+
     # angle needs to be between -1 and 1
     # cmd_angle = max(min(cmd_angle, 2), -2)
+    diff = cmd_angle - low_pass_cmd
+    p_total = 0.5 * cmd_angle
     print(cmd_angle, low_pass_cmd)
-    # if cmd_angle - prev_cmd_angle > 0.5 and abs(prev_cmd_angle) > abs(cmd_angle):
-    #     prev_cmd_angle += 0.01
-    #     cmd_angle = prev_cmd_angle
-    low_pass_cmd = (alpha * cmd_angle) + ((1 - alpha) * (low_pass_cmd))
-    if abs(low_pass_cmd) > 0.1:
-        car.setCruisingSpeed(20)
-    else:
-        car.setCruisingSpeed(35)
 
-    car.setSteeringAngle(low_pass_cmd)
-    print(low_pass_cmd)
-    print('brake intensity', car.getBrakeIntensity())
+    diff = cmd_angle - prev_cmd_angle
+    desired_speed = 40 / (abs(cmd_angle) + 1)
+    print('desired speed', desired_speed)
+    print('diff', diff)
+
+    inc = max(min(diff, 0.02), -0.02)
+
+    cmd_angle = prev_cmd_angle + inc
+    low_pass_cmd = cmd_angle
+    # low_pass_cmd = (alpha * cmd_angle) + ((1 - alpha) * (low_pass_cmd))
+
+    car.setCruisingSpeed(desired_speed)
+    car.setSteeringAngle(p_total)
+
+    print('low pass cmd', low_pass_cmd)
     print('speed', car.getCurrentSpeed())
     prev_cmd_angle = low_pass_cmd
-    wheel_speed = car.getWheelSpeed(0)
-
+    pub.publish(Float64(low_pass_cmd))
