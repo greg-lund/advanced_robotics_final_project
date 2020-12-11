@@ -97,7 +97,7 @@ while car.step() != -1:
     print(cmd_angle, low_pass_cmd)
 
     diff = cmd_angle - prev_cmd_angle
-    desired_speed = 40 / (abs(cmd_angle) + 1)
+    desired_speed = 35 / (abs(cmd_angle) + 1)
     print('desired speed', desired_speed)
     print('diff', diff)
 
