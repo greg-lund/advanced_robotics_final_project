@@ -9,6 +9,5 @@ renderingMode: PLAIN
 orthographicViewHeight: 1
 textFiles: 1 "controllers/my_controller/my_controller.py" "controllers/my_controller1/my_controller1.py"
 consoles: Console:All:All
-consoles: Console:All:All
-renderingDevicePerspectives: vehicle:front_camera;1;2.23438;0.00959079;0.010929
-renderingDevicePerspectives: vehicle:rear_camera;1;2.14844;0;0.776275
+renderingDevicePerspectives: vehicle:front_camera;1;1.09766;0.00191451;0.00600342
+renderingDevicePerspectives: vehicle:rear_camera;0;2.14844;0.0925335;0.0727532
