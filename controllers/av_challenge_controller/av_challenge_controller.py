@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import rospy
 from std_msgs.msg import Float64
 
+
 def laneLineCmdVel(camera, white_sensitivity=60):
     '''
     Take in raw image from front_camera, track
@@ -28,7 +29,6 @@ def laneLineCmdVel(camera, white_sensitivity=60):
     lower_white = np.array([0, 0, 255-white_sensitivity], dtype=np.uint8)
     upper_white = np.array([255, white_sensitivity, 255], dtype=np.uint8)
     mask = cv2.inRange(img_hsv, lower_white, upper_white)
-
     # Get edges via canny edge detection
     edges = cv2.Canny(mask, 200, 400)
     (h, w) = edges.shape
@@ -43,6 +43,7 @@ def laneLineCmdVel(camera, white_sensitivity=60):
     avg_center = 0
     avg_theta = 0
     n = 0
+
     for l in lines:
         l = l.flatten()
         if l[1] > l[3]:
@@ -52,7 +53,6 @@ def laneLineCmdVel(camera, white_sensitivity=60):
         avg_theta += theta
         avg_center += (l[0] + l[2])/2
         n += 1
-
     avg_center /= n
     avg_theta /= n
     return float(avg_center - w/2)/float(w/2)
@@ -81,6 +81,7 @@ car.setBrakeIntensity(0.75)
 car.setCruisingSpeed(35)
 alpha = 0.7
 prev_cmd_angle = 0
+
 low_pass_cmd = 0
 pub = rospy.Publisher('chatter', Float64, queue_size=10)
 rospy.init_node('talker', anonymous=True)
@@ -93,11 +94,14 @@ while car.step() != -1:
     # angle needs to be between -1 and 1
     # cmd_angle = max(min(cmd_angle, 2), -2)
     diff = cmd_angle - low_pass_cmd
-    p_total = 0.5 * cmd_angle
+    p_total = 0.55 * cmd_angle
+    # p_total = 0.5 * cmd_angle
     print(cmd_angle, low_pass_cmd)
 
     diff = cmd_angle - prev_cmd_angle
-    desired_speed = 35 / (abs(cmd_angle) + 1)
+    desired_speed = 40 / (abs(cmd_angle) + 1)
+    # desired_speed = 35 / (abs(cmd_angle) + 1)
+
     print('desired speed', desired_speed)
     print('diff', diff)
 
