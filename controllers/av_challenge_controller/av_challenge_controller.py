@@ -45,7 +45,7 @@ def detectStopSign(camera,init_brake=0.5):
     return 1
     '''
 
-def laneLineCmdVel(camera):
+def laneLineCmdVel(camera, white_sensitivity=60):
     '''
     Take in raw image from front_camera, track
     lane lines and return steering angle such that
@@ -86,6 +86,7 @@ def laneLineCmdVel(camera):
     avg_center = 0
     avg_theta = 0
     n = 0
+
     for l in lines:
         l = l.flatten()
         if l[1] > l[3]:
@@ -95,7 +96,6 @@ def laneLineCmdVel(camera):
         avg_theta += theta
         avg_center += (l[0] + l[2])/2
         n += 1
-
     avg_center /= n
     avg_theta /= n
     return float(avg_center - w/2)/float(w/2)
@@ -119,6 +119,7 @@ brake_k = 0.95
 # Controller tuning and inits
 max_speed = 39
 prev_cmd_angle = 0
+
 low_pass_cmd = 0
 
 while car.step() != -1:
@@ -131,6 +132,15 @@ while car.step() != -1:
 
     diff = cmd_angle - prev_cmd_angle
     desired_speed = max_speed / (abs(cmd_angle) + 1)
+    # p_total = 0.5 * cmd_angle
+    print(cmd_angle, low_pass_cmd)
+
+    diff = cmd_angle - prev_cmd_angle
+    desired_speed = 40 / (abs(cmd_angle) + 1)
+    # desired_speed = 35 / (abs(cmd_angle) + 1)
+
+    print('desired speed', desired_speed)
+    print('diff', diff)
 
     inc = max(min(diff, 0.02), -0.02)
 
