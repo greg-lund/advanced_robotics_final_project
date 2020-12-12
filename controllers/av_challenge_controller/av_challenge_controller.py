@@ -97,64 +97,62 @@ def laneLineCmdVel(camera, white_sensitivity=60):
     return float(avg_center - w/2)/float(w/2)
 
 
-# Initialize our car and sensors
-car = Car()
-front_camera = car.getCamera("front_camera")
-front_camera.enable(50)
+if __name__ == '__main__':
+    # Initialize our car and sensors
+    car = Car()
+    front_camera = car.getCamera("front_camera")
+    front_camera.enable(50)
 
-car.setBrakeIntensity(0.75)
-car.setCruisingSpeed(35)
+    car.setBrakeIntensity(0.75)
+    car.setCruisingSpeed(35)
 
-# Do we want to stop at stop signs?
-detect_stop_sign = True
-stop = False
-brakes = []
-brake_cmd = 1
-brake_k = 0.95
+    # Do we want to stop at stop signs?
+    detect_stop_sign = True
+    stop = False
+    brakes = []
+    brake_cmd = 1
+    brake_k = 0.95
 
-# Controller tuning and inits
-max_speed = 39
-prev_cmd_angle = 0
+    # Controller tuning and inits
+    max_speed = 39
+    prev_cmd_angle = 0
 
-low_pass_cmd = 0
+    low_pass_cmd = 0
 
-while car.step() != -1:
-    cmd_angle = laneLineCmdVel(front_camera)
-    if cmd_angle is None:
-        cmd_angle = prev_cmd_angle
+    while car.step() != -1:
+        cmd_angle = laneLineCmdVel(front_camera)
+        if cmd_angle is None:
+            cmd_angle = prev_cmd_angle
 
-    diff = cmd_angle - low_pass_cmd
-    p_total = 0.55 * cmd_angle
+        diff = cmd_angle - low_pass_cmd
+        p_total = 0.55 * cmd_angle
 
-    diff = cmd_angle - prev_cmd_angle
-    desired_speed = max_speed / (abs(cmd_angle) + 1)
-    # p_total = 0.5 * cmd_angle
-    print(cmd_angle, low_pass_cmd)
+        diff = cmd_angle - prev_cmd_angle
+        desired_speed = max_speed / (abs(cmd_angle) + 1)
+        # p_total = 0.5 * cmd_angle
+        print(cmd_angle, low_pass_cmd)
 
-    diff = cmd_angle - prev_cmd_angle
-    desired_speed = 40 / (abs(cmd_angle) + 1)
-    # desired_speed = 35 / (abs(cmd_angle) + 1)
 
-    print('desired speed', desired_speed)
-    print('diff', diff)
+        print('desired speed', desired_speed)
+        print('diff', diff)
 
-    inc = max(min(diff, 0.02), -0.02)
+        inc = max(min(diff, 0.02), -0.02)
 
-    cmd_angle = prev_cmd_angle + inc
-    low_pass_cmd = cmd_angle
+        cmd_angle = prev_cmd_angle + inc
+        low_pass_cmd = cmd_angle
 
-    car.setCruisingSpeed(desired_speed)
-    car.setSteeringAngle(p_total)
+        car.setCruisingSpeed(desired_speed)
+        car.setSteeringAngle(p_total)
+        print('speed', car.getCurrentSpeed())
+        prev_cmd_angle = low_pass_cmd
 
-    prev_cmd_angle = low_pass_cmd
-    
-    # Stop sign detection
-    if detect_stop_sign:
-        brakes.append(detectStopSign(front_camera))
-        brakes = brakes[-10:]
-        if sum(brakes) >= 8:
-            stop = True
-            print("Detected stop sign! Braking...")
-        if stop:
-            brake_cmd *= brake_k
-            car.setCruisingSpeed(desired_speed*brake_cmd)
+        # Stop sign detection
+        if detect_stop_sign:
+            brakes.append(detectStopSign(front_camera))
+            brakes = brakes[-10:]
+            if sum(brakes) >= 8:
+                stop = True
+                print("Detected stop sign! Braking...")
+            if stop:
+                brake_cmd *= brake_k
+                car.setCruisingSpeed(desired_speed*brake_cmd)
