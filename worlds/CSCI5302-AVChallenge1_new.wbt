@@ -831,7 +831,7 @@ TeslaModel3 {
   plate [
     "../textures/license.png"
   ]
-  controller "stop_sign_controller"
+  controller "av_challenge_controller"
   controllerArgs [
     ""
   ]
