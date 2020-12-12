@@ -80,8 +80,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation -0.14631955347160208 0.9739515648499171 0.17323087945937615 1.7647939194316085
-  position 12.84110127543562 15.887067906868426 97.48909060732619
+  orientation 0.003787596203368161 0.9870566779235479 0.1603270678379961 3.1882210212543116
+  position -3.8500464692550582 17.89069474143856 46.31012078443646
 }
 TexturedBackground {
 }
@@ -343,7 +343,7 @@ StraightRoadSegment {
   leftBorderBoundingObject TRUE
 }
 StraightRoadSegment {
-  translation -40 0 -0.42
+  translation -56.15 0.12 -0.42
   name "starting_line"
   width 11
   lines [
@@ -581,7 +581,7 @@ GenericTrafficLight {
   translation -34.1 0 177.67
   rotation 0 1 0 1.5708
   greenTime 30
-  state "green"
+  state "red"
 }
 GenericTrafficLight {
   translation -46.75 0 188.1
@@ -589,7 +589,7 @@ GenericTrafficLight {
   name "generic traffic light(1)"
   startGreen FALSE
   greenTime 30
-  state "red"
+  state "green"
 }
 StopSign {
   translation -46.6615 0 101.728
@@ -825,8 +825,8 @@ Road {
   castShadows TRUE
 }
 TeslaModel3 {
-  translation -39.9482 0.234553 107.239
-  rotation 0.836393085445504 0.5287960540215433 -0.14429601474120948 0.0290706
+  translation 0.765659 0.238457 93.76
+  rotation 0.007389612842581338 -0.9999363846480955 -0.008521753278084705 1.55509
   color 1 0 0
   plate [
     "../textures/license.png"

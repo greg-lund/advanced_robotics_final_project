@@ -15,12 +15,24 @@ def detectStopSign(camera,init_brake=0.5):
     '''
 
     img = cv2.flip(cv2.rotate(np.array(camera.getImageArray(), dtype='uint8'), cv2.ROTATE_90_CLOCKWISE), 1)
-    cv2.imwrite('stop_sign_light.png',img)
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     lower = np.array([110,17,168], dtype=np.uint8)
     upper = np.array([180,255,255], dtype=np.uint8)
     mask = cv2.inRange(img_hsv, lower, upper)
 
+    circles = cv2.HoughCircles(mask,cv2.HOUGH_GRADIENT,1,20,param1=12,param2=11,minRadius=4,maxRadius=8)
+
+    if circles is None:
+        return False
+    else:
+        circles = np.uint16(circles)
+        for c in circles[0,:]:
+            cv2.circle(img,(c[0],c[1]),c[2],(0,200,0),2)
+            cv2.circle(img,(c[0],c[1]),2,(0,0,255),3)
+        cv2.imshow('image',img)
+        return True
+
+    '''
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     areas = []
     for c in contours:
@@ -31,8 +43,9 @@ def detectStopSign(camera,init_brake=0.5):
         if max_area > 30:
             return max(-init_brake/110 * (max_area - 130),0)
     return 1
+    '''
 
-def laneLineCmdVel(camera, white_sensitivity=60):
+def laneLineCmdVel(camera):
     '''
     Take in raw image from front_camera, track
     lane lines and return steering angle such that
@@ -45,9 +58,17 @@ def laneLineCmdVel(camera, white_sensitivity=60):
 
     # Mask image to get just the (white) lane line
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    lower_white = np.array([0, 0, 255-white_sensitivity], dtype=np.uint8)
-    upper_white = np.array([255, white_sensitivity, 255], dtype=np.uint8)
+    lower_white = np.array([0,0,215], dtype=np.uint8)
+    upper_white = np.array([255,40,255], dtype=np.uint8)
     mask = cv2.inRange(img_hsv, lower_white, upper_white)
+
+    '''
+    out_img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+    cv2.imwrite('front_camera.png',out_img)
+    cv2.imwrite('front_camera_bgr.png',img)
+    cv2.imwrite('front_camera_hsw.png',img_hsv)
+    cv2.imwrite('front_camera_mask.png',mask)
+    '''
 
     # Get edges via canny edge detection
     edges = cv2.Canny(mask, 200, 400)
@@ -89,24 +110,27 @@ car.setBrakeIntensity(0.75)
 car.setCruisingSpeed(35)
 
 # Do we want to stop at stop signs?
-stop_sign = True
+detect_stop_sign = True
+stop = False
+brakes = []
+brake_cmd = 1
+brake_k = 0.95
 
 # Controller tuning and inits
-alpha = 0.7
+max_speed = 39
 prev_cmd_angle = 0
 low_pass_cmd = 0
 
 while car.step() != -1:
-    cmd_angle = laneLineCmdVel(front_camera, 40)
+    cmd_angle = laneLineCmdVel(front_camera)
     if cmd_angle is None:
         cmd_angle = prev_cmd_angle
 
     diff = cmd_angle - low_pass_cmd
-    p_total = 0.5 * cmd_angle
+    p_total = 0.55 * cmd_angle
 
     diff = cmd_angle - prev_cmd_angle
-    desired_speed = 40 / (abs(cmd_angle) + 1)
-    desired_speed = 35 / (abs(cmd_angle) + 1)
+    desired_speed = max_speed / (abs(cmd_angle) + 1)
 
     inc = max(min(diff, 0.02), -0.02)
 
@@ -119,6 +143,12 @@ while car.step() != -1:
     prev_cmd_angle = low_pass_cmd
     
     # Stop sign detection
-    if stop_sign:
-        brake_cmd = detectStopSign(front_camera)
-        car.setCruisingSpeed(desired_speed*brake_cmd)
+    if detect_stop_sign:
+        brakes.append(detectStopSign(front_camera))
+        brakes = brakes[-10:]
+        if sum(brakes) >= 8:
+            stop = True
+            print("Detected stop sign! Braking...")
+        if stop:
+            brake_cmd *= brake_k
+            car.setCruisingSpeed(desired_speed*brake_cmd)
