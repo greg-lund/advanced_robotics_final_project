@@ -26,10 +26,6 @@ def detectStopSign(camera,init_brake=0.5):
         return False
     else:
         circles = np.uint16(circles)
-        for c in circles[0,:]:
-            cv2.circle(img,(c[0],c[1]),c[2],(0,200,0),2)
-            cv2.circle(img,(c[0],c[1]),2,(0,0,255),3)
-        cv2.imshow('image',img)
         return True
 
     '''
