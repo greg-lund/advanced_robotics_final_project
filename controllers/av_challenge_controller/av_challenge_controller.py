@@ -128,7 +128,7 @@ if __name__ == '__main__':
         p_total = 0.55 * cmd_angle
 
         diff = cmd_angle - prev_cmd_angle
-        desired_speed = max_speed / (abs(cmd_angle) + 1)
+        desired_speed = 40 / (abs(cmd_angle) + 1)
         # p_total = 0.5 * cmd_angle
         print(cmd_angle, low_pass_cmd)
 
