@@ -107,7 +107,7 @@ if __name__ == '__main__':
     car.setCruisingSpeed(35)
 
     # Do we want to stop at stop signs?
-    detect_stop_sign = False
+    detect_stop_sign = True
     stop = False
     brakes = []
     brake_cmd = 1
